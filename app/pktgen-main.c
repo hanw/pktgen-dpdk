@@ -65,6 +65,7 @@
  */
 /* Created 2010 by Keith Wiles @ intel.com */
 
+#include <rte_connectal.h>
 #include "pktgen-main.h"
 
 #include "pktgen.h"
@@ -96,6 +97,7 @@ extern void execute_lua_close(lua_State * L);
 void
 pktgen_l2p_dump(void)
 {
+    fprintf(stderr, "[%s %d]\n", __FUNCTION__, __LINE__);
 	wr_raw_dump_l2p(pktgen.l2p);
 }
 
@@ -345,6 +347,19 @@ pktgen_parse_args(int argc, char **argv)
     return ret;
 }
 
+#define LENGTH (1024UL * 1024 * 1024)
+int connectal_initialize(void) {
+    char filepath[128];
+    /* initialize connectal api */
+    connectal_init(connectal);
+
+    rte_eal_hugepage_path(filepath, sizeof(filepath), 0); //FIXME: port0
+    int fd = open(filepath, O_CREAT | O_RDWR, 0755);
+    uint64_t base_pa = get_base_phys_addr();
+    connectal->init(fd, base_pa, LENGTH);
+    return 0;
+}
+
 /**************************************************************************//**
 *
 * main - Main routine to setup pktgen.
@@ -376,7 +391,7 @@ main(int argc, char **argv)
     pktgen.nb_txd           = DEFAULT_TX_DESC;
     pktgen.nb_ports_per_page= DEFAULT_PORTS_PER_PAGE;
 
-    wr_print_copyright(PKTGEN_APP_NAME, PKTGEN_CREATED_BY);
+    //wr_print_copyright(PKTGEN_APP_NAME, PKTGEN_CREATED_BY);
 
     if ( (pktgen.l2p = wr_l2p_create()) == NULL )
 		pktgen_log_panic("Unable to create l2p");
@@ -395,7 +410,6 @@ main(int argc, char **argv)
     argv += ret;
 
     pktgen.hz = rte_get_timer_hz();		// Get the starting HZ value.
-
     rte_delay_ms(100);      // Wait a bit for things to settle.
 
     /* parse application arguments (after the EAL ones) */
@@ -418,6 +432,7 @@ main(int argc, char **argv)
 
     // Configure and initialize the ports
     pktgen_config_ports();
+    connectal_initialize();
 
     pktgen_log_info("");
     pktgen_log_info("=== Display processing on lcore %d", rte_lcore_id());
@@ -426,6 +441,7 @@ main(int argc, char **argv)
     for (i = 0; i < RTE_MAX_LCORE; i++ ) {
     	if ( (i == rte_get_master_lcore()) || !rte_lcore_is_enabled(i) )
     		continue;
+    fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__);
         ret = rte_eal_remote_launch(pktgen_launch_one_lcore, NULL, i);
         if ( ret != 0 )
             pktgen_log_error("Failed to start lcore %d, return %d", i, ret);
@@ -434,15 +450,16 @@ main(int argc, char **argv)
 
 	// Disable printing log messages of level info and below to screen,
     // erase the screen and start updating the screen again.
-    pktgen_log_set_screen_level(LOG_LEVEL_WARNING);
-	wr_scrn_erase(pktgen.scrn->nrows);
+    //pktgen_log_set_screen_level(LOG_LEVEL_WARNING);
+	//wr_scrn_erase(pktgen.scrn->nrows);
 
-	wr_logo(3, 16, PKTGEN_APP_NAME);
-	wr_splash_screen(3, 16, PKTGEN_APP_NAME, PKTGEN_CREATED_BY);
+    fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__);
+	//wr_logo(3, 16, PKTGEN_APP_NAME);
+	//wr_splash_screen(3, 16, PKTGEN_APP_NAME, PKTGEN_CREATED_BY);
 
-    wr_scrn_resume();
+    //wr_scrn_resume();
 
-    pktgen_redisplay(1);
+    //pktgen_redisplay(1);
 
     rte_timer_setup();
 

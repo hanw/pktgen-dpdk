@@ -99,4 +99,6 @@ extern void pktgen_stop_running(void);
 
 extern void * pktgen_get_lua(void);
 
+int connectal_initialize(void);
+
 #endif	// _PKTGEN_MAIN_H_
