@@ -97,7 +97,6 @@ extern void execute_lua_close(lua_State * L);
 void
 pktgen_l2p_dump(void)
 {
-    fprintf(stderr, "[%s %d]\n", __FUNCTION__, __LINE__);
 	wr_raw_dump_l2p(pktgen.l2p);
 }
 
@@ -427,12 +426,14 @@ main(int argc, char **argv)
     	return -1;
 	}
 
+    // Initialize connectal
+    connectal_initialize();
+
     pktgen_log_info(">>> Packet Burst %d, RX Desc %d, TX Desc %d, mbufs/port %d, mbuf cache %d",
     		DEFAULT_PKT_BURST, DEFAULT_RX_DESC,	DEFAULT_TX_DESC, MAX_MBUFS_PER_PORT, MBUF_CACHE_SIZE);
 
     // Configure and initialize the ports
     pktgen_config_ports();
-    connectal_initialize();
 
     pktgen_log_info("");
     pktgen_log_info("=== Display processing on lcore %d", rte_lcore_id());
@@ -441,7 +442,6 @@ main(int argc, char **argv)
     for (i = 0; i < RTE_MAX_LCORE; i++ ) {
     	if ( (i == rte_get_master_lcore()) || !rte_lcore_is_enabled(i) )
     		continue;
-    fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__);
         ret = rte_eal_remote_launch(pktgen_launch_one_lcore, NULL, i);
         if ( ret != 0 )
             pktgen_log_error("Failed to start lcore %d, return %d", i, ret);
@@ -453,7 +453,6 @@ main(int argc, char **argv)
     //pktgen_log_set_screen_level(LOG_LEVEL_WARNING);
 	//wr_scrn_erase(pktgen.scrn->nrows);
 
-    fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__);
 	//wr_logo(3, 16, PKTGEN_APP_NAME);
 	//wr_splash_screen(3, 16, PKTGEN_APP_NAME, PKTGEN_CREATED_BY);
 
@@ -478,6 +477,7 @@ main(int argc, char **argv)
 
     execute_lua_close(pktgen.L);
 	pktgen_stop_running();
+    fprintf(stderr, "stopped pktgen\n");
 
     wr_scrn_pause();
 
@@ -486,6 +486,7 @@ main(int argc, char **argv)
 
     // Wait for all of the cores to stop running and exit.
     rte_eal_mp_wait_lcore();
+    fprintf(stderr, "stopped pktgen\n");
 
     return 0;
 }

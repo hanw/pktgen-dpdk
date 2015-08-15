@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Normal setup
 #   different cores for each port.
@@ -34,7 +34,10 @@ GDB="gdb --args"
 else
 GDB="LD_PRELOAD=libSegFault.so SEGFAULT_USE_ALTSTACK=1 SEGFAULT_OUTPUT_NAME=bsimexe-segv-output.txt"
 fi
-RUN_ARGS="-c f -n 2  --vdev eth_sonic0 --vdev eth_sonic1 --proc-type auto --socket-mem 512,512 --file-prefix pg -- -T -P -m [1:2].0,[3:4].1"
+#RUN_ARGS="-c f -n 2  --vdev eth_sonic0 --vdev eth_sonic1 --proc-type auto --socket-mem 512,512 --file-prefix pg -- -T -P -m [1:2].0,[3:4].1"
+RUN_ARGS="-c f -n 2  --vdev eth_sonic0 --proc-type auto --socket-mem 512,0 --file-prefix pg -- -T -P -m [1:2].0"
+
+#(sleep 1 && echo run) |
 sudo LD_LIBRARY_PATH=$JNI_PATH $GDB $PKTGEN_PATH $RUN_ARGS;
 fi
 
